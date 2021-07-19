@@ -25,6 +25,17 @@ public class redis {
         aeDeleteEventLoop();
     }
 
+
+
+    private static void initServerConfig() {
+
+    }
+
+    private static void loadServerConfig() {
+
+    }
+
+
     private static void aeDeleteEventLoop() {
 
     }
@@ -37,13 +48,6 @@ public class redis {
 
     }
 
-    private static void loadServerConfig() {
-
-    }
-
-    private static void initServerConfig() {
-
-    }
 
     public static void redisLog(Object obj){
         System.out.println(obj);
