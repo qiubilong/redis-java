@@ -15,17 +15,17 @@ public class Dict<K,V> {
     public DictType type;
 
     // 私有数据
-    private Object privdata;
+    public Object privdata;
 
     // 哈希表
-    private DictHashTable<K,V>[] ht = new DictHashTable[2];
+    public DictHashTable<K,V>[] ht = new DictHashTable[2];
 
     // rehash 索引
     // 当 rehash 不在进行时，值为 -1
-    private int rehashidx; /* rehashing not in progress if rehashidx == -1 */
+    public int rehashidx; /* rehashing not in progress if rehashidx == -1 */
 
     // 目前正在运行的安全迭代器的数量
-    private int iterators; /* number of iterators currently running */
+    public int iterators; /* number of iterators currently running */
 
 
     public int dictAdd(K key,V val){
