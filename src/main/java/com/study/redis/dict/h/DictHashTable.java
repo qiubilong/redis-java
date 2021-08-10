@@ -2,6 +2,8 @@ package com.study.redis.dict.h;
 
 import lombok.Data;
 
+import java.util.HashMap;
+
 /**
  * @author chenxuegui
  * @since 2021.07.28
@@ -11,7 +13,7 @@ import lombok.Data;
  * 每个字典都使用两个哈希表，从而实现渐进式 rehash 。
  */
 @Data
-public class DictHashTable {
+public class DictHashTable<K,V>  extends HashMap<K,V> {
     // 哈希表数组
     DictEntry[] table;
 

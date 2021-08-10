@@ -1,5 +1,7 @@
 package com.study.redis.dict.h;
 
+import com.study.redis.redis.h.RedisCommand;
+
 /**
  * @author chenxuegui
  * @since 2021.07.29
@@ -20,8 +22,8 @@ public class DictH {
     /* Create a new hash table
      * 创建一个新的字典
      */
-    public static Dict dictCreate(DictType type,Object privDataPtr) {
-        Dict d = new Dict();
+    public static Dict<String, RedisCommand> dictCreate(DictType type,Object privDataPtr) {
+        Dict<String, RedisCommand> d = new Dict();
 
         _dictInit(d,type,privDataPtr);
 

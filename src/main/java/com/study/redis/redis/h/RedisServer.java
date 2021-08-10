@@ -38,11 +38,11 @@ public class RedisServer {
     /**
      * 命令表(有rename配置)
      */
-    public Dict commands;
+    public Dict<String, RedisCommand> commands;
     /**
      * 命令表(无rename配置)
      */
-    public Dict orig_commands;
+    public Dict<String, RedisCommand> orig_commands;
 
     /**
      * 事件状态
@@ -201,7 +201,7 @@ public class RedisServer {
     /**
      * 常用快捷命令
      */
-    public RedisCommand delCommand, lpushCommand, lpopCommand, ropCommand;
+    public RedisCommand delCommand, multiCommand,lpushCommand, lpopCommand, ropCommand,rpopCommand;
 
 
     /*********************统计部分*****************************/

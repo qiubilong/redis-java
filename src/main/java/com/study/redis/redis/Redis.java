@@ -1,6 +1,9 @@
 package com.study.redis.redis;
 
 import com.study.redis.dict.h.DictH;
+import com.study.redis.redis.command.CommandFlag;
+import com.study.redis.redis.command.RedisCommandProc;
+import com.study.redis.redis.h.RedisCommand;
 import com.study.redis.redis.h.RedisServer;
 import com.study.redis.redis.h.SaveParam;
 
@@ -216,12 +219,12 @@ public class Redis {
         // 在这里初始化是因为接下来读取 .conf 文件时可能会用到这些命令
         server.commands = dictCreate(commandTableDictType, null);
         server.orig_commands = dictCreate(commandTableDictType, null);
-        //populateCommandTable();
-        //server.delCommand = lookupCommandByCString("del");
-        //server.multiCommand = lookupCommandByCString("multi");
-       // server.lpushCommand = lookupCommandByCString("lpush");
-        //server.lpopCommand = lookupCommandByCString("lpop");
-        //server.rpopCommand = lookupCommandByCString("rpop");
+        populateCommandTable();
+        server.delCommand = lookupCommandByCString("del");
+        server.multiCommand = lookupCommandByCString("multi");
+        server.lpushCommand = lookupCommandByCString("lpush");
+        server.lpopCommand = lookupCommandByCString("lpop");
+        server.rpopCommand = lookupCommandByCString("rpop");
 
         /* Slow log */
         // 初始化慢查询日志
@@ -238,6 +241,28 @@ public class Redis {
 
 
     }
+
+    /** 创建命令表 */
+    private static void populateCommandTable() {
+        for (RedisCommandProc proc : RedisCommandProc.values()) {
+            RedisCommand command = proc.getRedisCommandVo();
+            char[] chars = command.getSflags().toCharArray();
+            for (char aChar : chars) {
+                CommandFlag flag = CommandFlag.getCommandFlag(aChar);
+                command.flags |= flag.flag;
+            }
+
+            server.commands.dictAdd(command.getName(),command);
+            server.orig_commands.dictAdd(command.getName(),command);
+        }
+
+    }
+
+    /** 查找命令 */
+    private static RedisCommand lookupCommandByCString(String name) {
+        return server.commands.dictFetchValue(name);
+    }
+
 
     private static void appendServerSaveParams(int seconds, int changes) {
         server.saveparams.add(new SaveParam(seconds,changes));

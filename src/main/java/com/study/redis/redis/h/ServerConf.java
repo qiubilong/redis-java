@@ -93,7 +93,7 @@ public class ServerConf {
 
     /* Command flags. Please check the command table defined in the redis.c file
      * for more information about the meaning of every flag. */
-// 命令标志
+    // 命令标志
     public static int REDIS_CMD_WRITE = 1;              /* "w" flag */
     public static int REDIS_CMD_READONLY = 2;            /* "r" flag */
     public static int REDIS_CMD_DENYOOM = 4;             /* "m" flag */
