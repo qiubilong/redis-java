@@ -1,20 +1,26 @@
 package com.study.redis.redis;
 
-import com.study.redis.dict.h.DictH;
 import com.study.redis.redis.command.CommandFlag;
 import com.study.redis.redis.command.RedisCommandProc;
-import com.study.redis.redis.h.RedisCommand;
-import com.study.redis.redis.h.RedisServer;
-import com.study.redis.redis.h.SaveParam;
+import com.study.redis.redis.h.*;
+import lombok.extern.slf4j.Slf4j;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
+import java.util.LinkedList;
 import java.util.UUID;
 
+import static com.study.redis.Config.appendServerSaveParams;
+import static com.study.redis.Config.loadServerConfig;
 import static com.study.redis.cluster.h.ClusterConf.REDIS_CLUSTER_DEFAULT_MIGRATION_BARRIER;
 import static com.study.redis.cluster.h.ClusterConf.REDIS_CLUSTER_DEFAULT_NODE_TIMEOUT;
 import static com.study.redis.dict.h.DictH.dictCreate;
 import static com.study.redis.dict.h.DictType.commandTableDictType;
 import static com.study.redis.redis.h.AOFStates.REDIS_AOF_OFF;
 import static com.study.redis.redis.h.ErrorCode.REDIS_OK;
+import static com.study.redis.redis.h.RedisObject.createObject;
+import static com.study.redis.redis.h.RedisObjectType.REDIS_STRING;
+import static com.study.redis.redis.h.SDS.sdsnew;
 import static com.study.redis.redis.h.ServerConf.*;
 
 /**
@@ -22,19 +28,20 @@ import static com.study.redis.redis.h.ServerConf.*;
  * @since 2021.07.12
  * redis-server启动入口，生命从这里起源
  */
+@Slf4j
 public class Redis {
 
 
     /**** 全局声明***/
-    public static RedisServer server = new RedisServer();
+    private static RedisServer server = new RedisServer();
 
-    public static void main(String[] args) {
+    public void main(String[] args) {
 
         //初始化服务器
         initServerConfig();
 
         //载入配置文件
-        loadServerConfig();
+        loadServerConfig(server);
 
         //创建初始化服务器数据结构
         initServer();
@@ -48,7 +55,7 @@ public class Redis {
 
 
 
-    private static void initServerConfig() {
+    private  void initServerConfig() {
 
         //设置服务器id
         server.runid = UUID.randomUUID().toString();
@@ -169,9 +176,9 @@ public class Redis {
         server.lruclock = getLRUClock();
 
         // rdb的默认保存策略
-        appendServerSaveParams(60 * 60, 1);  /* save after 1 hour and 1 change */
-        appendServerSaveParams(300, 100);  /* save after 5 minutes and 100 changes */
-        appendServerSaveParams(60, 10000); /* save after 1 minute and 10000 changes */
+        appendServerSaveParams(server, 60 * 60, 1);  /* save after 1 hour and 1 change */
+        appendServerSaveParams(server, 300, 100);  /* save after 5 minutes and 100 changes */
+        appendServerSaveParams(server, 60, 10000); /* save after 1 minute and 10000 changes */
 
         /* Replication related */
         // 初始化和复制相关的状态
@@ -243,7 +250,7 @@ public class Redis {
     }
 
     /** 创建命令表 */
-    private static void populateCommandTable() {
+    private  void populateCommandTable() {
         for (RedisCommandProc proc : RedisCommandProc.values()) {
             RedisCommand command = proc.getRedisCommandVo();
             char[] chars = command.getSflags().toCharArray();
@@ -259,40 +266,122 @@ public class Redis {
     }
 
     /** 查找命令 */
-    private static RedisCommand lookupCommandByCString(String name) {
+    private  RedisCommand lookupCommandByCString(String name) {
         return server.commands.dictFetchValue(name);
     }
 
 
-    private static void appendServerSaveParams(int seconds, int changes) {
-        server.saveparams.add(new SaveParam(seconds,changes));
-        server.saveparamslen = server.saveparams.size();
-    }
 
-    private static long getLRUClock() {
+    public static Long LRU_CLOCK(){
+        return (1000/server.hz <= REDIS_LRU_CLOCK_RESOLUTION) ? server.lruclock : getLRUClock();
+    }
+    public static Long getLRUClock() {
 
         return (System.currentTimeMillis() /REDIS_LRU_CLOCK_RESOLUTION) & REDIS_LRU_CLOCK_MAX;
     }
 
-    private static void loadServerConfig() {
+
+    private  void aeDeleteEventLoop() {
 
     }
 
-
-    private static void aeDeleteEventLoop() {
-
-    }
-
-    private static void aeMain() {
+    private  void aeMain() {
 
     }
 
-    private static void initServer() {
+    private  void initServer() {
+
+        //设置信号处理函数
+        setupSignalHandlers();
+
+        //初始化并创建数据结构
+        server.current_client = null;
+        server.clients = new LinkedList<>();
+        server.clients_to_close  = new LinkedList<>();
+        server.slaves = new LinkedList<>();
+        server.monitors = new LinkedList<>();
+        server.slaveseldb = -1;
+        server.unblocked_clients =  new LinkedList<>();
+        server.ready_keys =  new LinkedList<>();
+        server.clients_waiting_acks =  new LinkedList<>();;
+        server.get_ack_from_slaves = 0;
+        server.clients_paused = false;
+
+        createSharedObjects();
 
     }
 
+    private void createSharedObjects() {
+        // 常用回复
+        Shared.crlf = createObject(REDIS_STRING, sdsnew("\r\n"));
+        Shared.ok = createObject(REDIS_STRING, sdsnew("+OK\r\n"));
+        Shared.err = createObject(REDIS_STRING, sdsnew("-ERR\r\n"));
+        Shared.emptybulk = createObject(REDIS_STRING, sdsnew("$0\r\n\r\n"));
+        Shared.czero = createObject(REDIS_STRING, sdsnew(":0\r\n"));
+        Shared.cone = createObject(REDIS_STRING, sdsnew(":1\r\n"));
+        Shared.cnegone = createObject(REDIS_STRING, sdsnew(":-1\r\n"));
+        Shared.nullbulk = createObject(REDIS_STRING, sdsnew("$-1\r\n"));
+        Shared.nullmultibulk = createObject(REDIS_STRING, sdsnew("*-1\r\n"));
+        Shared.emptymultibulk = createObject(REDIS_STRING, sdsnew("*0\r\n"));
+        Shared.pong = createObject(REDIS_STRING, sdsnew("+PONG\r\n"));
+        Shared.queued = createObject(REDIS_STRING, sdsnew("+QUEUED\r\n"));
+        Shared.emptyscan = createObject(REDIS_STRING, sdsnew("*2\r\n$1\r\n0\r\n*0\r\n"));
+        // 常用错误回复
+        Shared.wrongtypeerr = createObject(REDIS_STRING, sdsnew(
+                "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n"));
+        Shared.nokeyerr = createObject(REDIS_STRING, sdsnew(
+                "-ERR no such key\r\n"));
+        Shared.syntaxerr = createObject(REDIS_STRING, sdsnew(
+                "-ERR syntax error\r\n"));
+        Shared.sameobjecterr = createObject(REDIS_STRING, sdsnew(
+                "-ERR source and destination objects are the same\r\n"));
+        Shared.outofrangeerr = createObject(REDIS_STRING, sdsnew(
+                "-ERR index out of range\r\n"));
+        Shared.noscripterr = createObject(REDIS_STRING, sdsnew(
+                "-NOSCRIPT No matching script. Please use EVAL.\r\n"));
+        Shared.loadingerr = createObject(REDIS_STRING, sdsnew(
+                "-LOADING Redis is loading the dataset in memory\r\n"));
+        Shared.slowscripterr = createObject(REDIS_STRING, sdsnew(
+                "-BUSY Redis is busy running a script. You can only call SCRIPT KILL or SHUTDOWN NOSAVE.\r\n"));
+        Shared.masterdownerr = createObject(REDIS_STRING, sdsnew(
+                "-MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'.\r\n"));
+        Shared.bgsaveerr = createObject(REDIS_STRING, sdsnew(
+                "-MISCONF Redis is configured to save RDB snapshots, but is currently not able to persist on disk. Commands that may modify the data set are disabled. Please check Redis logs for details about the error.\r\n"));
+        Shared.roslaveerr = createObject(REDIS_STRING, sdsnew(
+                "-READONLY You can't write against a read only slave.\r\n"));
+        Shared.noautherr = createObject(REDIS_STRING, sdsnew(
+                "-NOAUTH Authentication required.\r\n"));
+        Shared.oomerr = createObject(REDIS_STRING, sdsnew(
+                "-OOM command not allowed when used memory > 'maxmemory'.\r\n"));
+        Shared.execaborterr = createObject(REDIS_STRING, sdsnew(
+                "-EXECABORT Transaction discarded because of previous errors.\r\n"));
+        Shared.noreplicaserr = createObject(REDIS_STRING, sdsnew(
+                "-NOREPLICAS Not enough good slaves to write.\r\n"));
+        Shared.busykeyerr = createObject(REDIS_STRING, sdsnew(
+                "-BUSYKEY Target key name already exists.\r\n"));
 
-    public static void redisLog(Object obj){
-        System.out.println(obj);
+        // 常用字符
+        Shared.space = createObject(REDIS_STRING, sdsnew(" "));
+        Shared.colon = createObject(REDIS_STRING, sdsnew(":"));
+        Shared.plus = createObject(REDIS_STRING, sdsnew("+"));
+
+        // 常用整数
+        for (int j = 0; j < REDIS_SHARED_INTEGERS; j++) {
+            Shared.integers[j] = createObject(REDIS_STRING, sdsnew(""+j));
+            Shared.integers[j].encoding = REDIS_ENCODING_INT;
+        }
+        
     }
+
+
+    private void setupSignalHandlers() {
+
+        //关机信号 kill -15
+        Signal.handle(new Signal("TERM"), signal -> {
+            log.info("Received SIGTERM, scheduling shutdown...");
+            server.shutdown_asap = true;
+        });
+    }
+
+
 }

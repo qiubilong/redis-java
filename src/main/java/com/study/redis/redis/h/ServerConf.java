@@ -1,5 +1,7 @@
 package com.study.redis.redis.h;
 
+import static com.study.redis.redis.Redis.getLRUClock;
+
 /**
  * @author chenxuegui
  * @since 2021.07.23
@@ -110,11 +112,11 @@ public class ServerConf {
 
     /* Object types */
 // 对象类型
-    public static int REDIS_STRING = 0;
+   /* public static int REDIS_STRING = 0;
     public static int REDIS_LIST = 1;
     public static int REDIS_SET = 2;
     public static int REDIS_ZSET = 3;
-    public static int REDIS_HASH = 4;
+    public static int REDIS_HASH = 4;*/
 
     /* Objects encoding. Some kind of objects like Strings and Hashes can be
      * internally represented in multiple ways. The 'encoding' field of the object
@@ -248,7 +250,7 @@ public class ServerConf {
     public static int AOF_FSYNC_NO = 0;
     public static int AOF_FSYNC_ALWAYS = 1;
     public static int AOF_FSYNC_EVERYSEC = 2;
-    public static int REDIS_DEFAULT_AOF_FSYNC = AOF_FSYNC_EVERYSEC;
+    public static int REDIS_DEFAULT_AOF_FSYNC = AOF_FSYNC.AOF_FSYNC_EVERYSEC.id;
 
     /* Zip structure related defaults */
     public static int REDIS_HASH_MAX_ZIPLIST_ENTRIES = 512;
@@ -274,7 +276,7 @@ public class ServerConf {
     public static int REDIS_MAXMEMORY_ALLKEYS_LRU = 3;
     public static int REDIS_MAXMEMORY_ALLKEYS_RANDOM = 4;
     public static int REDIS_MAXMEMORY_NO_EVICTION = 5;
-    public static int REDIS_DEFAULT_MAXMEMORY_POLICY = REDIS_MAXMEMORY_NO_EVICTION;
+    public static int REDIS_DEFAULT_MAXMEMORY_POLICY = MaxmemoryPolicy.REDIS_MAXMEMORY_NO_EVICTION.id;
 
     /* Scripting */
     public static int REDIS_LUA_TIME_LIMIT = 5000; /* milliseconds */
@@ -321,5 +323,6 @@ public class ServerConf {
 
 
     public static double R_Zero, R_PosInf, R_NegInf, R_Nan;
+
 
 }

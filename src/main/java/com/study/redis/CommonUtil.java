@@ -8,4 +8,8 @@ public class CommonUtil {
 
     public static Object NULL = null;
 
+
+    public static void redisLog(Object obj){
+        System.out.println(obj);
+    }
 }

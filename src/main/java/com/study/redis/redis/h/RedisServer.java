@@ -57,7 +57,7 @@ public class RedisServer {
     /**
      * 服务器关闭标志
      */
-    public boolean shutdown_asap;
+    public volatile boolean shutdown_asap;
 
     /**
      * serverCron在执行渐进式rehash
@@ -159,7 +159,7 @@ public class RedisServer {
      */
     public List<RedisClient> slaves, monitors;
 
-    /**
+    /**clients_waiting_acks
      * 当前客户端，用于崩溃时报告
      */
     public RedisClient current_client;
@@ -575,7 +575,7 @@ public class RedisServer {
     public int repl_scriptcache_size;          /* Max number of elements. */
 
     /* Synchronous replication. */
-    //list *clients_waiting_acks;         /* Clients waiting in WAIT command. */
+    public List<RedisClient> clients_waiting_acks;         /* Clients waiting in WAIT command. */
     public int get_ack_from_slaves;            /* If true we send REPLCONF GETACK. */
 
 
