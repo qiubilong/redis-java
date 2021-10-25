@@ -1,6 +1,6 @@
 package com.study.redis.redis.h;
 
-import com.study.redis.ae_h;
+import com.study.redis.ae.h.aeEventLoop;
 import com.study.redis.cluster_h;
 import com.study.redis.dict.h.Dict;
 import com.study.redis.dict_h;
@@ -33,7 +33,7 @@ public class RedisServer {
     /**
      * 数据库
      */
-    public RedisDb db;
+    public RedisDb[] db;
 
     /**
      * 命令表(有rename配置)
@@ -47,7 +47,7 @@ public class RedisServer {
     /**
      * 事件状态
      */
-    public ae_h.aeEventLoop el;
+    public aeEventLoop el;
 
     /**
      * 最近一次使用时钟

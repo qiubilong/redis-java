@@ -5,13 +5,13 @@ import com.study.redis.redis.command.RedisCommandProc;
 import com.study.redis.redis.h.*;
 import lombok.extern.slf4j.Slf4j;
 import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import java.util.LinkedList;
 import java.util.UUID;
 
 import static com.study.redis.Config.appendServerSaveParams;
 import static com.study.redis.Config.loadServerConfig;
+import static com.study.redis.ae.ae.aeCreateEventLoop;
 import static com.study.redis.cluster.h.ClusterConf.REDIS_CLUSTER_DEFAULT_MIGRATION_BARRIER;
 import static com.study.redis.cluster.h.ClusterConf.REDIS_CLUSTER_DEFAULT_NODE_TIMEOUT;
 import static com.study.redis.dict.h.DictH.dictCreate;
@@ -307,9 +307,17 @@ public class Redis {
         server.get_ack_from_slaves = 0;
         server.clients_paused = false;
 
+        //创建共享对象
         createSharedObjects();
 
+        //创建事件循环模型
+        server.el = aeCreateEventLoop(server.maxclients + REDIS_EVENTLOOP_FDSET_INCR);
+
+        server.db = new RedisDb[server.dbnum];
+
+
     }
+
 
     private void createSharedObjects() {
         // 常用回复
